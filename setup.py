@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='torch-pp',
-    version='0.0.1-dev',
+    version='0.0.2-dev',
     packages=['torch_pp'],
     url='https://github.com/Pravuk/torch-preprocessing',
     license='MIT',
