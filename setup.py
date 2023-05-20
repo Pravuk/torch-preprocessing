@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='torch-preprocessing',
+    name='torch-pp',
     version='0.0.1-dev',
     packages=['torch_pp'],
     url='https://github.com/Pravuk/torch-preprocessing',
