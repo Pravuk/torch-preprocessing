@@ -1,2 +1,7 @@
-# torch-preprocessing
-Standard Scaler on pure PyTorch
+# torch-pp
+
+Data preprocessing for ML solutions
+
+*StandardScaler*
+
+
