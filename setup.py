@@ -8,5 +8,5 @@ setup(
     license='MIT',
     author='Roman Pravuk',
     author_email='r.pravuk@gmail.com',
-    description='StandardScaler as torch module'
+    description='StandardScaler for pytorch tensors'
 )
