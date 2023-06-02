@@ -2,12 +2,12 @@ import torch
 
 
 class StandardScaler:
-    n_samples_seen = 0
-    scale, mean, var = None, None, None
 
-    def __init__(self, with_mean=True, with_std=True):
+    def __init__(self, with_mean: bool = True, with_std: bool = True):
         self.with_mean = with_mean
         self.with_std = with_std
+        self.n_samples_seen = 0
+        self.scale, self.mean, self.var = torch.zeros(0), torch.zeros(0), torch.zeros(0)
 
     def fit_transform(self, _input: torch.Tensor) -> torch.Tensor:
         self.partial_fit(_input)
@@ -23,25 +23,16 @@ class StandardScaler:
         if n_samples == 0:
             return
         if self.n_samples_seen == 0:
-            self.scale = torch.zeros(n_features)
-            self.mean = torch.zeros(n_features)
-            self.var = torch.zeros(n_features)
+            self.scale = torch.zeros(n_features).to(x.device)
+            self.mean = torch.zeros(n_features).to(x.device)
+            self.var = torch.zeros(n_features).to(x.device)
 
         self.mean, self.var, self.n_samples_seen = incremental_mean_and_var(x, self.mean, self.var, self.n_samples_seen)
 
-        def fn(value):
-            return value if value != 0 else 1
-
-        self.scale = self.var.apply_(fn)
+        self.scale = torch.where(self.var != 0, self.var, torch.ones(self.var.shape).to(x.device))
         self.scale = torch.sqrt(self.scale)
 
     def transform(self, x: torch.Tensor):
-        return self.__transform(x, lambda v, mean, scale: (v - mean) / scale)
-
-    def inverse_transform(self, x: torch.Tensor):
-        return self.__transform(x, lambda v, mean, scale: mean + v * scale)
-
-    def __transform(self, x: torch.Tensor, fn):
         x_out = x.clone()
         n_features = x.shape[1]
         for i in range(n_features):
@@ -51,8 +42,20 @@ class StandardScaler:
             if self.with_std:
                 scale = self.scale[i]
             for j in range(self.n_samples_seen):
-                x_out[j, i] = fn(x[j, i], mean, scale)
+                x_out[j, i] = (x[j, i] - mean) / scale
+        return x_out
 
+    def inverse_transform(self, x: torch.Tensor):
+        x_out = x.clone()
+        n_features = x.shape[1]
+        for i in range(n_features):
+            mean, scale = 0., 1.
+            if self.with_mean:
+                mean = self.mean[i]
+            if self.with_std:
+                scale = self.scale[i]
+            for j in range(self.n_samples_seen):
+                x_out[j, i] = mean + x[j, i] * scale
         return x_out
 
 
@@ -62,7 +65,7 @@ def incremental_mean_and_var(x: torch.Tensor, last_mean: torch.Tensor, last_vari
     n_features = x.shape[1]
     last_sum = last_mean.clone()
     last_sum = torch.mul(last_sum, float(last_sample_count))
-    new_sum = torch.zeros(n_features)
+    new_sum = torch.zeros(n_features).to(x.device)
     for i in range(new_sample_count):
         new_sum = torch.add(new_sum, x[i])
 
@@ -70,7 +73,7 @@ def incremental_mean_and_var(x: torch.Tensor, last_mean: torch.Tensor, last_vari
     updated_mean = torch.add(last_sum, new_sum)
     updated_mean = torch.mul(updated_mean, 1. / float(updated_sample_count))
 
-    new_unnormalized_variance = torch.zeros(n_features)
+    new_unnormalized_variance = torch.zeros(n_features).to(x.device)
     new_mean = torch.mul(new_sum, 1. / float(new_sample_count))
 
     for i in range(new_sample_count):
