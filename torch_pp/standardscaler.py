@@ -34,28 +34,18 @@ class StandardScaler:
 
     def transform(self, x: torch.Tensor):
         x_out = x.clone()
-        n_features = x.shape[1]
-        for i in range(n_features):
-            mean, scale = 0., 1.
-            if self.with_mean:
-                mean = self.mean[i]
-            if self.with_std:
-                scale = self.scale[i]
-            for j in range(self.n_samples_seen):
-                x_out[j, i] = (x[j, i] - mean) / scale
+        if self.with_mean:
+            x_out -= self.mean
+        if self.with_std:
+            x_out /= self.scale
         return x_out
 
     def inverse_transform(self, x: torch.Tensor):
         x_out = x.clone()
-        n_features = x.shape[1]
-        for i in range(n_features):
-            mean, scale = 0., 1.
-            if self.with_mean:
-                mean = self.mean[i]
-            if self.with_std:
-                scale = self.scale[i]
-            for j in range(self.n_samples_seen):
-                x_out[j, i] = mean + x[j, i] * scale
+        if self.with_std:
+            x_out *= self.scale
+        if self.with_mean:
+            x_out += self.mean
         return x_out
 
 
